@@ -11,21 +11,28 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Go 1.x
-        uses: actions/setup-go@v2
+      - name: code
+        uses: actions/checkout@v4
+
+      - name: go
+        uses: actions/setup-go@v5
         with:
-          go-version: ^1.22
-        id: go
+          go-version: ^1.21
 
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+      - name: test
+        run: |
+          go get -v -t -d ./...
+          go install github.com/jstemmer/go-junit-report/v2@latest
+          go test -coverprofile=coverage.out -covermode=atomic -cover -json -v ./... 2>&1 | go-junit-report -set-exit-code > tests.xml
 
-      - name: Test
-        run: go test -v -coverprofile=coverage.txt -covermode=atomic ./...
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2
+      - name: Upload test results to Codecov
+        uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.txt
-          verbose: true
+          files: tests.xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.out
